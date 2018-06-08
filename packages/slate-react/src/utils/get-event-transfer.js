@@ -25,12 +25,14 @@ const FRAGMENT_MATCHER = / data-slate-fragment="([^\s"]+)"/
  * @return {Object}
  */
 
-function getEventTransfer(event) {
-  if (event.nativeEvent) {
-    event = event.nativeEvent
+function getEventTransfer(e) {
+  let event = e
+  if (e.nativeEvent) {
+    event = e.nativeEvent
   }
 
-  const transfer = event.dataTransfer || event.clipboardData
+  const transfer =
+    event.dataTransfer || event.clipboardData || e._dataTransfer
   let fragment = getType(transfer, FRAGMENT)
   let node = getType(transfer, NODE)
   const html = getType(transfer, HTML)
@@ -72,7 +74,7 @@ function getEventTransfer(event) {
       files = Array.from(transfer.files)
     }
   } catch (err) {
-    if (transfer.files && transfer.files.length) {
+    if (transfer && transfer.files && transfer.files.length) {
       files = Array.from(transfer.files)
     }
   }
@@ -141,6 +143,8 @@ function getTransferType(data) {
  */
 
 function getType(transfer, type) {
+  if (!transfer) return null
+
   if (!transfer.types || !transfer.types.length) {
     // COMPAT: In IE 11, there is no `types` field but `getData('Text')`
     // is supported`. (2017/06/23)

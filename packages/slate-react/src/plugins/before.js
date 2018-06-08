@@ -5,6 +5,7 @@ import Hotkeys from 'slate-hotkeys'
 import {
   IS_FIREFOX,
   IS_IOS,
+  IS_IE,
   IS_ANDROID,
   SUPPORTED_EVENTS,
 } from 'slate-dev-environment'
@@ -399,8 +400,12 @@ function BeforePlugin() {
   function onPaste(event, change, editor) {
     if (editor.props.readOnly) return true
 
-    // Prevent defaults so the DOM state isn't corrupted.
-    event.preventDefault()
+    // COMPAT: In IE 11, only plain text can be retrieved from the event's `clipboardData`
+    // Do not use `event.preventDefault()` as we need the native paste action.
+    if (!IS_IE) {
+      // Prevent defaults so the DOM state isn't corrupted.
+      event.preventDefault()
+    }
 
     debug('onPaste', { event })
   }

@@ -5,6 +5,7 @@ import getWindow from 'get-window'
 import {
   IS_FIREFOX,
   IS_IOS,
+  IS_IE,
   IS_ANDROID,
   SUPPORTED_EVENTS,
 } from 'slate-dev-environment'
@@ -18,6 +19,33 @@ import findRange from '../utils/find-range'
 import getChildrenDecorations from '../utils/get-children-decorations'
 import scrollToSelection from '../utils/scroll-to-selection'
 import removeAllRanges from '../utils/remove-all-ranges'
+import getHtmlFromNativePaste from '../utils/get-html-from-native-paste'
+
+// COMPAT: IE 11 only supports 'Text' and 'URL' as arguments to getData
+// This normalizes the DataTransfer object between browsers
+function MockDataTransfer(event, text, html) {
+  const types = []
+
+  if (text) {
+    types.push('text/plain')
+  }
+
+  if (html) {
+    types.push('text/html')
+  }
+
+  return {
+    types,
+    getData(type) {
+      if (type === 'text/plain') {
+        return text
+      } else if (type === 'text/html') {
+        return html
+      }
+      return null
+    },
+  }
+}
 
 /**
  * Debug.
@@ -303,6 +331,21 @@ class Content extends React.Component {
         this.updateSelection()
         return
       }
+    }
+
+    // COMPAT: In IE 11, only plain text can be retrieved from the event's
+    // `clipboardData`. To get HTML, use the browser's native paste action which
+    // can only be handled synchronously. (2017/06/23)
+    if (IS_IE && handler == 'onPaste') {
+      event.persist() // prevent react from  reusing this synthetic event
+      const text = event.clipboardData
+        ? event.clipboardData.getData('Text')
+        : null
+      getHtmlFromNativePaste(this, html => {
+        event._dataTransfer = new MockDataTransfer(event, text, html)
+        this.props[handler](event)
+      })
+      return
     }
 
     // Don't handle drag and drop events coming from embedded editors.

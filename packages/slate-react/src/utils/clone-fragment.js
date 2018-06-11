@@ -91,7 +91,7 @@ function cloneFragment(event, value, fragment = value.fragment) {
   // since the result is more predictable.
   if (event.clipboardData && event.clipboardData.setData && !IS_IE) {
     event.preventDefault()
-    event.clipboardData.setData(TEXT, native.toString())
+    event.clipboardData.setData(TEXT, div.textContent)
     event.clipboardData.setData(FRAGMENT, encoded)
     event.clipboardData.setData(HTML, div.innerHTML)
     return
